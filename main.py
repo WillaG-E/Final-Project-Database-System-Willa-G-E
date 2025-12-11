@@ -1,3 +1,7 @@
+#Author: Willa Galipeau-Eldridge
+#Date:
+#Purpose: Menu for Database System and user input
+
 def main():
     print("\n================ Database System ================")
     print("""
