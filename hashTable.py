@@ -1,6 +1,6 @@
 #Author: Willa Galipeau-Eldridge
 #Date: 12/16/2025
-#Purpose: Hash Table
+#Purpose: Hash Table logic
 
 class HashTable:
     def __init__(self, size, hashFunction, fieldName = ""):
