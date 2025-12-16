@@ -10,13 +10,9 @@ class Storage:
         self.records = records
 
     def deleteRecords(self, recordList):
-        deletedCount = 0
         for r in recordList:
             try:
                 recordIndex = self.records.index(r)
                 self.records[recordIndex] = None
-                deletedCount += 1
             except ValueError:
                 print("Record not found.")
-
-        return deletedCount

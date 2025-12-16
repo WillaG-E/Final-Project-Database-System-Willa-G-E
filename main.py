@@ -3,16 +3,14 @@
 #Purpose: Menu for Database System and user input
 
 from database import Database
-from records import Record
 
 def main():
 
     SEARCHABLE_FIELDS = ["movie_title","release_date", "genre", "rating", "box_office_revenue"]
-    database = Database(searchableFields = SEARCHABLE_FIELDS)
-    results = [] #stores the set of objects returned by a search
+    database = Database(SEARCHABLE_FIELDS)
+    results = None #stores the set of objects returned by a search
     
     print("\n================ Database System ================")
-    print(f"\nSearchable Fields: {','.join(SEARCHABLE_FIELDS)}")
 
     while(True):
         print("""
@@ -29,49 +27,72 @@ def main():
 
         if (user_input == "1"):
             #Load the data from the CSV file (MOCKDATA.CSV)
-            path = "MOCK_DATA.csv"
-            database.load_csv(path)
-            print("Data is loaded and indexed by hash table.")
+            file = "MOCK_DATA.csv"
+            database.load_csv(file)
+            results = []
+            print("Data is loaded from CSV file.")
         elif (user_input == "2"):
             #Create a field to index
-            field = input("Field to index (must be searchable field): ")
+            field = input("Field: ")
             if (field in SEARCHABLE_FIELDS):
                 database.create_index(field)
                 print(f"Index created on {field}")
             else:
                     print("Invalid field name.")
+
         elif (user_input == "3"):
             #Exact search
             field = input("Search field: ")
             value = input("Search value: ")
+
+            if field not in SEARCHABLE_FIELDS:
+                print(f"Invalid searchable field: {field}")
+                results = []
+                continue
 
             #function that sends the field and value variables to get an exact search
             results = database.exact_search(field, value)
             print(f"Found {len(results)} records.")
             for r in results:
                 print(r)
+
         elif (user_input == "4"):
             #Range queries
             field = input("Indexed field: ")
-            low = float(input("Low bound: "))
-            high = float(input("High bound: "))
+            low = input("Low bound: ")
+            high = input("High bound: ")
+
+            if field not in SEARCHABLE_FIELDS:
+                print(f"Invalid field: {field}")
+                results = []
+                continue
             results = database.range_search(field, low, high)
             print(f"Found {len(results)} records.")
+            for r in results:
+                print(r)
+
         elif (user_input == "5"):
             #Export functionality
+            if results is None or len(results) == 0:
+                print("No search results to export.")
+                continue
+
             filename = input("Export filename: ")
-            with open(filename, "w") as f:
+            with open(filename, "w", newline="") as f:
                 for row in results:
                     f.write(",".join(row.csvRow()) + "\n")
             print(f"Successfully exported file: ${filename}")
+
         elif (user_input == "6"):
             #Delete functionality
-            if (results == None):
+            if (results == None or len(results) == 0):
                 print("No search results to delete")
                 continue
-            database.delete_records(results)
-            print(f"Deleted {len(results)} records.")
+
+            count = database.delete_records(results)
+            print(f"Deleted {count} records.")
             results = [] #clears the results after deletion
+        
         elif (user_input == "0"):
             return
 

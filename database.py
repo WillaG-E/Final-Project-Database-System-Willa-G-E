@@ -1,6 +1,6 @@
 #Author: Willa Galipeau-Eldridge
 #Date: 12/16/2025
-#Purpose: 
+#Purpose: Load the CSV file and hold the database logic
 
 from recordStorage import Storage
 from indexManager import IndexManager
@@ -12,54 +12,58 @@ class Database:
         self.storage = Storage()
         self.indexManager = IndexManager(searchableFields)
     
-    def load_csv(self, path):
+    def load_csv(self, file):
         self.storage.records = []
         self.indexManager = IndexManager(self.indexManager.searchableFields)
 
-        with open(path) as f:
+        with open(file, 'r', newline='', encoding="utf-8") as f:
             reader = csv.reader(f)
             header = next(reader)
             Record.FIELD_NAMES = header
-            
-            for index, row in enumerate(reader):
-                rec = Record(row)
-                self.storage.records.append(rec)
+
+            for row in reader:
+                self.storage.records.append(Record(row))
 
         for index, rec in enumerate(self.storage.records):
             self.indexManager.add_hash_record(rec, index)
+        
+        print(f"Loaded {len(self.storage.records)} records.")
 
     def create_index(self, field):
-        records_with_indices = [(r, i) for i, r in enumerate(self.storage.records) if r != None]
-        self.indexManager.create_bplus_index(field, records_with_indices)
-
-    def get_record_indices(self, recordIndices):
-        records = []
-        for i in recordIndices:
-            if (i < len(self.storage.records)):
-                record = self.storage.records[i]
-                if (record != None):
-                    records.append(record)
-        return records
+        self.indexManager.create_bplus_index(field, self.storage.records)
     
     def exact_search(self, field, value):
-        hash = self.indexManager.hashTables[field]
-        recordIndices = hash.search(value)
-        return self.get_record_indices(recordIndices)
+        if field not in self.indexManager.hashTables:
+            print(f"Errot: Field '{field}' is not a searchable field.")
+            return []
+        indices = self.indexManager.hashTables[field].search(value)
+        return [self.storage.records[i] for i in indices if i < len(self.storage.records) and self.storage.records[i] is not None]
     
     def range_search(self, field, low, high):
         if field not in self.indexManager.bplusIndices:
-            raise Exception("Field is not indexed.")
+            print(f"Error: Index for field '{field}' does not exist. Please create it first.")
+            return []
         
         tree = self.indexManager.bplusIndices[field]
-        recordIndices = tree.range_search(low, high)
-        return self.get_record_indices(recordIndices)
+        try:
+            low = float(low)
+        except ValueError:
+            pass
+        try:
+            high = float(high)
+        except ValueError:
+            pass
+        indices = tree.rangeSearch(low, high)
+        return [self.storage.records[i] for i in indices if i < len(self.storage.records) and self.storage.records[i] is not None]
     
     def delete_records(self, records):
+        deletedCount = 0
         for r in records:
             try:
                 recordIndex = self.storage.records.index(r)
+                self.indexManager.delete_all(r, recordIndex)
+                self.storage.records[recordIndex] = None
+                deletedCount += 1
             except ValueError:
-                continue
-
-            self.indexManager.delete_all(r, recordIndex)
-            self.storage.deleteRecords([r])
+                pass
+        return deletedCount

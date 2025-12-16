@@ -6,86 +6,72 @@ class DataItem:
     def __init__(self, key, value):
         self.key = key
         self.value = value #to use when there is duplicate keys
+    
+    def __repr__(self):
+        return f"({self.key}:{self.value})"
 
-    def __str__(self):
-        return str(self.key)
-    
-    def _repr__(self):
-        return str(self.key)
-    
 class Bucket:
-    def __init__(self, maxDegree):
+    def __init__(self, maxDegree, is_leaf=False):
         self.keys = [] #list of DataItem (leaf) or keys (internal node)
-        self.links = [] #links to child nodes (internal) or list of record indices (leaf)
+        self.children = [] #links to child nodes (internal) or list of record indices (leaf)
         self.parent = None
-        self.is_leaf = True
+        self.is_leaf = is_leaf
         self.next = None #pointer, pointing to the next leaf node
         self.prev = None #pointer, pointing to the previous leaf node
         self.maxDegree = maxDegree
-
-    def __str__(self):
-        return str(self.keys)
-        
-    def __repr__(self):
-        return str(self.keys)
     
 class BucketNode(Bucket):
     def add(self, item, leftLink = None):
         targetIndex = 0
-        while (targetIndex < len(self.keys) and item.key >= self.keys[targetIndex].key):
-            targetIndex += 1
-        
+
         if (self.is_leaf):
-            if (targetIndex > 0 and self.keys[targetIndex - 1].key == item.key):
+            #find the point to insert
+            while (targetIndex < len(self.keys) and item.key > self.keys[targetIndex].key):
+                targetIndex += 1
+            
+                #handling duplicate keys
+                if (targetIndex < len(self.keys) and item.key == self.keys[targetIndex].key):
+                    while (targetIndex < len(self.keys) and item.key == self.keys[targetIndex].key):
+                        targetIndex += 1
                 self.keys.insert(targetIndex, item)
-            else:
-                self.keys.insert(targetIndex, item)
-            return len(self.keys)
+                return len(self.keys)
         else:
+            while (targetIndex < len(self.keys) and item.key >= self.keys[targetIndex.key]):
+                targetIndex += 1
             self.keys.insert(targetIndex, item)
-            self.links.insert(targetIndex, leftLink)
+            if leftLink:
+                self.children.insert(targetIndex, leftLink)
             return len(self.keys)
         
-    def remove(self, key):
-        i = 0
-        while i < len(self.keys):
-            if (self.keys[i] == key):
-                self.keys.pop(i)
-                return True
-            i += 1
-        return False
-    
 class BPlusTree:
-    def __init__(self, maxDegree, fieldName = ""):
+    def __init__(self, maxDegree):
         self.root = None
         self.maxDegree = maxDegree
-        self.fieldName = fieldName
 
     def add(self, key, value):
         data = DataItem(key, value)
         if (self.root == None):
-            self.root = BucketNode(self.maxDegree)
-            self.root.is_leaf = True
+            self.root = BucketNode(self.maxDegree, is_leaf = True)
             self.root.keys.append(data)
             return
         
         node = self.root
-        while (node.is_leaf == None):
+        while (not node.is_leaf):
             i = 0
             while (i < len(node.keys) and key >= node.keys[i].key):
                 i += 1
-            node = node.links[i]
+            node = node.children[i]
         node.add(data)
         if (len(node.keys) > self.maxDegree):
             self.split_leaf_node(node)
         
     def split_leaf_node(self, node):
         middle = self.maxDegree // 2
-        leftNode = BucketNode(self.maxDegree)
-        leftNode.is_leaf = True
+        leftNode = BucketNode(self.maxDegree, is_leaf = True)
         leftNode.keys = node.keys[:middle]
 
         promoteKey = node.keys[middle]
+        promoteData = DataItem(promoteKey, None)
         node.keys = node.keys[middle:]
 
         leftNode.next = node
@@ -95,15 +81,14 @@ class BPlusTree:
         node.prev = leftNode
 
         if (node.parent == None):
-            self.root = BucketNode(self.maxDegree)
-            self.root.is_leaf = False
-            self.root.keys = [promoteKey]
-            self.root.links = [leftNode, node]
+            self.root = BucketNode(self.maxDegree, is_leaf = False)
+            self.root.keys = [promoteData]
+            self.root.children = [leftNode, node]
             leftNode.parent = self.root
             node.parent = self.root
             return
         
-        splitIndex = node.parent.add(promoteKey, leftNode)
+        node.parent.add(promoteKey, leftNode)
         leftNode.parent = node.parent
 
         #check if the parent needs to be split
@@ -112,30 +97,28 @@ class BPlusTree:
 
     def split_internal_node(self, node):
         middle = self.maxDegree // 2
-        leftNode = BucketNode(self.maxDegree)
-        leftNode.is_leaf = False
+        leftNode = BucketNode(self.maxDegree, is_leaf = False)
 
         leftNode.keys = node.keys[:middle]
-        leftNode.links = node.links[:middle + 1]
-        for child in leftNode.links:
+        leftNode.children = node.links[:middle + 1]
+        for child in leftNode.children:
             child.parent = leftNode
         
         promote = node.keys[middle]
 
         node.keys = node.keys[middle + 1:]
-        node.links = node.links[middle + 1:]
+        node.children = node.children[middle + 1:]
 
         #handling the root split
         if (node.parent == None):
-            self.root = BucketNode(self.maxDegree)
-            self.root.is_leaf = False
+            self.root = BucketNode(self.maxDegree, is_leaf = False)
             self.root.keys = [promote]
-            self.root.links = [leftNode, node]
+            self.root.children = [leftNode, node]
             leftNode.parent = self.root
             node.parent = self.root
             return
         
-        splitIndex = node.parent.add(promote, leftNode)
+        node.parent.add(promote, leftNode)
         leftNode.parent = node.parent
 
         if (len(node.parent.keys) > self.maxDegree):
@@ -275,21 +258,20 @@ class BPlusTree:
         self.add(key, recordIndex)
     
     def bulkLoad(self, sortedPairs):
-        if (sortedPairs == None):
+        if not sortedPairs:
+            self.root = None
             return
         
         leafNodes = []
-        currentLeaf = BucketNode(self.maxDegree)
-        currentLeaf.is_leaf = True
+        currentLeaf = BucketNode(self.maxDegree, is_leaf = True)
 
-        for i, (key,index) in enumerate(sortedPairs):
+        for key, index in sortedPairs:
             dataItem = DataItem(key, index)
             currentLeaf.keys.append(dataItem)
 
             if (len(currentLeaf.keys) >= self.maxDegree):
                 leafNodes.append(currentLeaf)
-                nextLeaf = BucketNode(self.maxDegree)
-                nextLeaf.is_leaf = True
+                nextLeaf = BucketNode(self.maxDegree, is_leaf = True)
                 currentLeaf.next = nextLeaf
                 nextLeaf.prev = currentLeaf
                 currentLeaf = nextLeaf
@@ -297,38 +279,33 @@ class BPlusTree:
             if (currentLeaf.keys):
                 leafNodes.append(currentLeaf)
 
-                nodesBuild = leafNodes
+            if not leafNodes:
+                self.root = None
+                return
+            
+            nodesBuild = leafNodes
             while (len(nodesBuild) > 1):
                 nodesNextLevel = []
-                newParent = BucketNode(self.maxDegree)
-                newParent.is_leaf = False
+                i = 0
+                while (i < len(nodesBuild)):
+                    parent = BucketNode(self.maxDegree, is_leaf = False)
 
-                for i, child in enumerate(nodesBuild):
-                    if (i > 0):
-                        promoteKeyValue = child.leys[0]
-                        promoteData = DataItem(promoteKeyValue.key, None)
+                    parent.children.append(nodesBuild[i])
+                    nodesBuild[i].parent = parent
 
-                        #insert into parent
-                        newParent.keys.append(promoteData)
+                    j = i + 1
+                    while (j < len(nodesBuild) and len(parent.keys) < self.maxDegree):
+                        promoteKey = nodesBuild[j].keys[0].key
+                        parent.keys.append(DataItem(promoteKey, None))
+                        parent.children.append(nodesBuild[j])
+                        nodesBuild[j].parent = parent
+                        j += 1
+                    
+                    nodesNextLevel.append(parent)
+                    i = j
 
-                        #link to the previous node
-                        newParent.links.append(nodesBuild[i - 1])
-                        nodesBuild[i - 1].parent = newParent
-
-                    if (i == len(nodesBuild) - 1):
-                        newParent.links.append(child)
-                        child.parent = newParent
-
-                    #check for a parent split
-                    if (len(newParent.keys) >= self.maxDegree):
-                        #implement an internal split similar to split_internal_node
-                        pass
-                if (len(nodesBuild) > 1):
-                    nodesNextLevel.append(newParent)
-                    nodesBuild = nodesNextLevel
-            
-            if (leafNodes):
-                self.root = leafNodes[0].parent if leafNodes[0].parent else leafNodes[0]
+                nodesBuild = nodesNextLevel
+            self.root = nodesBuild[0]
 
     def delete(self, key, recordIndex):
         node = self.findLeaf(key)
@@ -338,7 +315,7 @@ class BPlusTree:
         targetIndex = -1
         #find the specific DataItem
         for i, item in enumerate(node.keys):
-            if (item.key == key and item.value == recordIndex):
+            if (str(item.key) == str(key) and item.value == recordIndex):
                 targetIndex = i
                 break
         if (targetIndex != -1):

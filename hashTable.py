@@ -3,45 +3,37 @@
 #Purpose: Hash Table logic
 
 class HashTable:
-    def __init__(self, size, hashFunction, fieldName = ""):
+    def __init__(self, size, hashFunction):
         self.size = size
-        self.hashTable = [None] * size
+        self.hashTable = [[] for _ in range(size)]
         self.hashFunction = hashFunction
-        self.fieldName = fieldName
 
     def add(self, key, recordIndex):
         #Make sure that there is a key; return otherwise
-        if (key == None):
+        if key is None:
             return
-        
         #modify the index value by the hash table length
-        index = self.hashTable(key) % self.size
-
-        #insert a data item into the hash table
-        #check to see if there is already an index; if not then append that item
-        if (self.hashTable[index] == None):
-            self.hashTable[index] = [recordIndex]
-        else:
-            self.hashTable[index].append(recordIndex)
+        index = self.hashFunction(str(key)) % self.size
+        self.hashTable[index].append((key, recordIndex))
 
     def search(self, key):
-        index = self.hashFunction(key) % self.size
-        bucket = self.hashTable[index]
-        if not bucket:
-            return []
-        return bucket #returns the list of indices
+         #Make sure that there is a key; return otherwise
+        if key is None:
+            return
+        index = self.hashFunction(str(key)) % self.size
+        return [ri for k, ri in self.hashTable[index] if str(k) == str(key)]
 
     def remove(self, key, recordIndex):
         if (key == None):
             return
         
-        index = self.hashFunction(key) % self.size
+        index = self.hashFunction(str(key)) % self.size
         bucket = self.hashTable[index]
 
-        if (bucket and recordIndex in bucket):
-            bucket.remove(recordIndex)
-        if (not bucket):
-            self.hashTable[index] = None
+        self.hashTable[index] = [
+            (k, ri) for k, ri in bucket
+            if not (str(k) == str(key) and ri == recordIndex)
+        ]
 
 #Hash Function - using most consistent from FNV-1a
 #pasted in from hash tables; HW5 - Hash Something Out

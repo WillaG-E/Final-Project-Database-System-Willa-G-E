@@ -3,7 +3,7 @@
 #Purpose: Stores data for fileds using CSV headers
 
 class Record:
-    FIELD_NAMES = ["movie_title", "genre", "release_date", "director","box_office_revenue", "rating", "duration_minutes", "production_company", "quote"]
+    FIELD_NAMES = []
 
     def __init__(self, rowData):
         self.data = {}
@@ -15,3 +15,6 @@ class Record:
     
     def csvRow(self):
         return [str(self.data[field]) for field in self.FIELD_NAMES]
+    
+    def __repr__(self):
+        return str(self.data)

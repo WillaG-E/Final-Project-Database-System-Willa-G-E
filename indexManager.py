@@ -4,32 +4,33 @@
 
 from hashTable import HashTable, hashFNV_1a
 from bPlusTree import BPlusTree
-from records import Record
 
 class IndexManager:
     def __init__(self, searchableFields):
         self.searchableFields = searchableFields
-        self.hashTables = {}
+        self.hashTables = {
+            f: HashTable(hashFunction = hashFNV_1a, size = 20000) 
+            for f in searchableFields
+        }
         self.bplusIndices = {}
-        for field in searchableFields:
-            self.hashTables[field] = HashTable(hashFunction = hashFNV_1a, size = 20000, fieldName = field)
     
     def add_hash_record(self, record, recordIndex):
         for field, hash in self.hashTables.items():
-            key = record.getField(field)
-            hash.add(key, recordIndex)
+            hash.add(record.getField(field), recordIndex)
 
-    def create_bplus_index(self, field, record_with_indices):
-        sortedPairs = sorted([(r.getField(field), index) for r, index in record_with_indices], key = lambda x: x[0])
-        tree = BPlusTree(maxDegree = 100, fieldName = field)
+    def create_bplus_index(self, field, records):
+        sortedPairs = [(r.getField(field), i)
+                        for i, r in enumerate(records) if r is not None]
+        sortedPairs.sort(key = lambda x: str(x[0]))
+        tree = BPlusTree(maxDegree = 100)
         tree.bulkLoad(sortedPairs)
         self.bplusIndices[field] = tree
 
     def delete_all(self, record, recordIndex):
+        #deletes from the hash table
         for field, hash in self.hashTables.items():
-            key = record.getField(field)
-            hash.delete(key, recordIndex)
+            hash.remove(record.getField(field), recordIndex)
 
-        for field, tree in self.bplusIndices.items():
-            key = record.getField(field)
-            tree.delete(key, recordIndex)
+        #deletes from the b+ trees; if the index exists
+        for field, bPlusTree in self.bplusIndices.items():
+            bPlusTree.delete(record.getField(field), recordIndex)
