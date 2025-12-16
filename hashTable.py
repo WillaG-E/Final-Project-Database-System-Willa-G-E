@@ -1,5 +1,5 @@
 #Author: Willa Galipeau-Eldridge
-#Date: 12/11/2025
+#Date: 12/16/2025
 #Purpose: Hash Table
 
 class HashTable:
@@ -9,36 +9,39 @@ class HashTable:
         self.hashFunction = hashFunction
         self.fieldName = fieldName
 
-    def add(self, key, item):
+    def add(self, key, recordIndex):
         #Make sure that there is a key; return otherwise
         if (key == None):
             return
         
         #modify the index value by the hash table length
-        index = self.hashTable[index] % self.size
+        index = self.hashTable(key) % self.size
 
         #insert a data item into the hash table
         #check to see if there is already an index; if not then append that item
         if (self.hashTable[index] == None):
-            self.hashTable[index] = [item]
+            self.hashTable[index] = [recordIndex]
         else:
-            self.hashTable[index].append(item)
-
-    def bulkAdd(self, items):
-        for item in items:
-            key = item.keys[self.fieldName]
-            self.add(key, item)
+            self.hashTable[index].append(recordIndex)
 
     def search(self, key):
         index = self.hashFunction(key) % self.size
         bucket = self.hashTable[index]
         if not bucket:
             return []
-        results = []
-        for item in bucket:
-            if (item.keys[self.fieldName] == key):
-                results.append(item)
-        return results
+        return bucket #returns the list of indices
+
+    def remove(self, key, recordIndex):
+        if (key == None):
+            return
+        
+        index = self.hashFunction(key) % self.size
+        bucket = self.hashTable[index]
+
+        if (bucket and recordIndex in bucket):
+            bucket.remove(recordIndex)
+        if (not bucket):
+            self.hashTable[index] = None
 
 #Hash Function - using most consistent from FNV-1a
 #pasted in from hash tables; HW5 - Hash Something Out

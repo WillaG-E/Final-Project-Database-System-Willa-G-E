@@ -1,9 +1,14 @@
 #Author: Willa Galipeau-Eldridge
-#Date:
+#Date: 12/16/2025
 #Purpose: Menu for Database System and user input
 
 def main():
+
+    SEARCHABLE_FIELDS = ["movie_title","release_date", "genre", "rating", "box_office_revenue"]
+    
+    results = [] #stores the set of objects returned by a search
     print("\n================ Database System ================")
+    print(f"\nSearchable Fields: {','.join(SEARCHABLE_FIELDS)}")
     print("""
         1 - Load CSV
         2 - Create Index
@@ -34,12 +39,23 @@ def main():
             pass
         elif (user_input == "3"):
             #Exact search
-            pass
+            field = input("Search field: ")
+            value = input("Search value: ")
+
+            #function that sends the field and value variables to get an exact search
+            
+            print(results)
+
         elif (user_input == "4"):
             #Range queries
             pass
         elif (user_input == "5"):
             #Export functionality
+            filename = input("Export filename: ")
+            with open(filename, "w") as f:
+                for row in results:
+                    f.write(",".join(row))
+            print(f"Successfully exported file: ${filename}")
             pass
         elif (user_input == "6"):
             #Delete functionality
