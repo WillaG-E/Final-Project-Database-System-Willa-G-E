@@ -66,12 +66,13 @@ class BPlusTree:
             self.split_leaf_node(node)
         
     def split_leaf_node(self, node):
-        middle = self.maxDegree // 2
+        middle = (self.maxDegree + 1) // 2
         leftNode = BucketNode(self.maxDegree, is_leaf = True)
         leftNode.keys = node.keys[:middle]
 
-        promoteKey = node.keys[middle]
+        promoteKey = node.keys[middle].key
         promoteData = DataItem(promoteKey, None)
+
         node.keys = node.keys[middle:]
 
         leftNode.next = node
@@ -124,11 +125,135 @@ class BPlusTree:
         if (len(node.parent.keys) > self.maxDegree):
             self.split_internal_node(node.parent)
 
-    #pasted code from BPlusTree homework assignment
+    def findLeaf(self, key):
+        #helper function to help navigate from the root to the correct leaf node for a given key
+        node = self.root
+        if (node == None):
+            return None
+        while (not node.is_leaf):
+            i = 0
+            while (i < len(node.keys) and key >= node.keys[i].key):
+                i += 1
+                if i < len(node.children):
+                    node = node.children[i]
+                else:
+                    return None
+        return node
+    
+    def bulkLoad(self, sortedPairs):
+        if not sortedPairs:
+            self.root = None
+            return
+        
+        leafNodes = []
+        currentLeaf = BucketNode(self.maxDegree, is_leaf = True)
+
+        for key, index in sortedPairs:
+            dataItem = DataItem(key, index)
+            currentLeaf.keys.append(dataItem)
+
+            if (len(currentLeaf.keys) >= self.maxDegree):
+                leafNodes.append(currentLeaf)
+                nextLeaf = BucketNode(self.maxDegree, is_leaf = True)
+                currentLeaf.next = nextLeaf
+                nextLeaf.prev = currentLeaf
+                currentLeaf = nextLeaf
+
+        if (currentLeaf.keys and currentLeaf not in leafNodes):
+            leafNodes.append(currentLeaf)
+
+        if not leafNodes:
+            self.root = None
+            return
+            
+        nodesBuild = leafNodes
+        while (len(nodesBuild) > 1):
+            nodesNextLevel = []
+            i = 0
+            while (i < len(nodesBuild)):
+                parent = BucketNode(self.maxDegree, is_leaf = False)
+
+                parent.children.append(nodesBuild[i])
+                nodesBuild[i].parent = parent
+
+                j = i + 1
+                while (j < len(nodesBuild) and len(parent.keys) < self.maxDegree):
+                    promoteKey = nodesBuild[j].keys[0].key
+                    parent.keys.append(DataItem(promoteKey, None))
+                    parent.children.append(nodesBuild[j])
+                    nodesBuild[j].parent = parent
+                    j += 1
+                    
+                nodesNextLevel.append(parent)
+                i = j
+
+            nodesBuild = nodesNextLevel
+        self.root = nodesBuild[0]
+
+    def delete(self, key, recordIndex):
+        node = self.findLeaf(key)
+        if (node == None):
+            return
+        
+        targetIndex = -1
+        #find the specific DataItem
+        for i, item in enumerate(node.keys):
+            if (str(item.key) == str(key) and item.value == recordIndex):
+                targetIndex = i
+                break
+        if (targetIndex != -1):
+            smallest_key = (targetIndex == 0) and (node.prev is None or node.prev.keys[-1].key != key)
+            node.keys.pop(targetIndex)
+
+            if smallest_key and node.keys:
+                parent = node.parent
+                while parent:
+                    try:
+                        childIndex = parent.children.index(node)
+                        if childIndex > 0:
+                            parent.keys[childIndex - 1] = DataItem(node.keys[0].key, None)
+                            break
+                        else:
+                            pass
+                    except ValueError:
+                        break
+                    parent = parent.parent
+            minKeys = self.maxDegree // 2
+            if (node != self.root and len(node.keys) < minKeys):
+                self.fix_leaf_bucket(node)
+
+    def rangeSearch(self, low = None, high = None):
+        allIndices = set()
+        
+        startKey = low if low is not None else -float('inf')
+        currentNode = self.findLeaf(startKey)
+
+        if (currentNode == None):
+            return []
+        
+        while (currentNode is not None):
+            for item in currentNode.keys:
+                key = item.key
+                index = item.value
+
+                if (high is not None and key > high):
+                    return list(allIndices)
+
+                if (low is not None or key >= low):
+                    allIndices.add(index)
+                
+                allIndices.add(index)
+
+            currentNode = currentNode.next
+        return list(allIndices)
+    
+        #pasted code from BPlusTree homework assignment
     def fix_leaf_bucket(self, node):
         if node == self.root:
+            if not node.keys:
+                self.root = None
             return
-        left, right, index = self.get_siblings(node)
+        left, right = self.get_siblings(node)
         if self.valid_steal(left):
             self.leaf_steal(node, 'left')
         elif self.valid_steal(right):
@@ -140,8 +265,10 @@ class BPlusTree:
 
     def fix_internal_bucket(self, node):
         if node == self.root:
+            if not node.keys:
+                self.root = None
             return
-        left, right, index = self.get_siblings(node)
+        left, right = self.get_siblings(node)
         if self.valid_steal(left):
             self.internal_steal(node, 'left')
         elif self.valid_steal(right):
@@ -234,118 +361,3 @@ class BPlusTree:
             leftNode.parent = None
         elif parent != self.root and len(parent.keys) < (self.maxdegree - 1) // 2:
             self.fix_internal_bucket(parent)
-
-
-    def findLeaf(self, key):
-        #helper function to help navigate from the root to the correct leaf node for a given key
-        node = self.root
-        if (node == None):
-            return
-        while (node != None):
-            i = 0
-            while (i < len(node.keys) and key >= node.keys[i].key):
-                i += 1
-                #make sure that links exist before accessing links
-                if (node.is_leaf):
-                    return node
-                if i < len(node.links):
-                    node = node.links[i]
-                else:
-                    return None
-        return None
-    
-    def insert(self, key, recordIndex):
-        self.add(key, recordIndex)
-    
-    def bulkLoad(self, sortedPairs):
-        if not sortedPairs:
-            self.root = None
-            return
-        
-        leafNodes = []
-        currentLeaf = BucketNode(self.maxDegree, is_leaf = True)
-
-        for key, index in sortedPairs:
-            dataItem = DataItem(key, index)
-            currentLeaf.keys.append(dataItem)
-
-            if (len(currentLeaf.keys) >= self.maxDegree):
-                leafNodes.append(currentLeaf)
-                nextLeaf = BucketNode(self.maxDegree, is_leaf = True)
-                currentLeaf.next = nextLeaf
-                nextLeaf.prev = currentLeaf
-                currentLeaf = nextLeaf
-
-            if (currentLeaf.keys):
-                leafNodes.append(currentLeaf)
-
-            if not leafNodes:
-                self.root = None
-                return
-            
-            nodesBuild = leafNodes
-            while (len(nodesBuild) > 1):
-                nodesNextLevel = []
-                i = 0
-                while (i < len(nodesBuild)):
-                    parent = BucketNode(self.maxDegree, is_leaf = False)
-
-                    parent.children.append(nodesBuild[i])
-                    nodesBuild[i].parent = parent
-
-                    j = i + 1
-                    while (j < len(nodesBuild) and len(parent.keys) < self.maxDegree):
-                        promoteKey = nodesBuild[j].keys[0].key
-                        parent.keys.append(DataItem(promoteKey, None))
-                        parent.children.append(nodesBuild[j])
-                        nodesBuild[j].parent = parent
-                        j += 1
-                    
-                    nodesNextLevel.append(parent)
-                    i = j
-
-                nodesBuild = nodesNextLevel
-            self.root = nodesBuild[0]
-
-    def delete(self, key, recordIndex):
-        node = self.findLeaf(key)
-        if (node == None):
-            return
-        
-        targetIndex = -1
-        #find the specific DataItem
-        for i, item in enumerate(node.keys):
-            if (str(item.key) == str(key) and item.value == recordIndex):
-                targetIndex = i
-                break
-        if (targetIndex != -1):
-            node.keys.pop(targetIndex)
-
-            minKeys = (self.maxDegree - 1) // 2
-            if (node != self.root and len(node.keys) < minKeys):
-                self.fix_leaf_bucket(node)
-
-    def rangeSearch(self, low = None, high = None):
-        allIndices = set()
-        
-        startKey = low if low != None else -float('inf')
-        currentNode = self.findLeaf(startKey)
-
-        if (currentNode == None):
-            return []
-        
-        while (currentNode != None):
-            for item in currentNode.keys:
-                key = item.key
-                index = item.value
-
-                if (low != None and key < low):
-                    continue
-
-                if (high != None and key > high):
-                    return list(allIndices)
-                
-                allIndices.add(index)
-
-            currentNode = currentNode.next
-        return list(allIndices)

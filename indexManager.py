@@ -19,8 +19,9 @@ class IndexManager:
             hash.add(record.getField(field), recordIndex)
 
     def create_bplus_index(self, field, records):
-        sortedPairs = [(r.getField(field), i)
+        sortedPairs = [(self.parse_key(field, r.getField(field)), i)
                         for i, r in enumerate(records) if r is not None]
+        sortedPairs = [pair for pair in sortedPairs if pair[0] is not None]
         sortedPairs.sort(key = lambda x: str(x[0]))
         tree = BPlusTree(maxDegree = 100)
         tree.bulkLoad(sortedPairs)
@@ -34,3 +35,17 @@ class IndexManager:
         #deletes from the b+ trees; if the index exists
         for field, bPlusTree in self.bplusIndices.items():
             bPlusTree.delete(record.getField(field), recordIndex)
+
+    def parse_key(self, field, value):
+        numeric_fields = ["rating", "box_office_revenue"]
+
+        if field == "box_office_revenue" and isinstance(value, str):
+            value = value.replace('$', '').replace(',', '')
+
+        if field in numeric_fields:
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return None
+            
+        return value
