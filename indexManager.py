@@ -40,12 +40,10 @@ class IndexManager:
         numeric_fields = ["rating", "box_office_revenue"]
 
         if field == "box_office_revenue" and isinstance(value, str):
-            value = value.replace('$', '').replace(',', '')
-
-        if field in numeric_fields:
+            import re
             try:
-                return float(value)
-            except (ValueError, TypeError):
+                return float(re.sub(r'[$,]', '', value))
+            except ValueError:
                 return None
             
         return value

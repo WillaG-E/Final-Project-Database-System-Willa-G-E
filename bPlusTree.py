@@ -101,7 +101,7 @@ class BPlusTree:
         leftNode = BucketNode(self.maxDegree, is_leaf = False)
 
         leftNode.keys = node.keys[:middle]
-        leftNode.children = node.links[:middle + 1]
+        leftNode.children = node.children[:middle + 1]
         for child in leftNode.children:
             child.parent = leftNode
         
@@ -128,7 +128,7 @@ class BPlusTree:
     def findLeaf(self, key):
         #helper function to help navigate from the root to the correct leaf node for a given key
         node = self.root
-        if (node == None):
+        if (node is None):
             return None
         while (not node.is_leaf):
             i = 0
@@ -136,6 +136,8 @@ class BPlusTree:
                 i += 1
                 if i < len(node.children):
                     node = node.children[i]
+                elif (node.children):
+                    node = node.children[-1]
                 else:
                     return None
         return node
@@ -146,8 +148,6 @@ class BPlusTree:
             return
         
         bulkThreshold = (self.maxDegree * 3) // 4
-        if bulkThreshold == 0:
-            bulkThreshold = 1
 
         leafNodes = []
         currentLeaf = BucketNode(self.maxDegree, is_leaf = True)
@@ -156,8 +156,7 @@ class BPlusTree:
             dataItem = DataItem(key, index)
             currentLeaf.keys.append(dataItem)
 
-            if (len(currentLeaf.keys) >= bulkThreshold and len(leafNodes) < len(sortedPairs) // bulkThreshold):
-                remainingPairs = len(sortedPairs) - sum(len(node.keys) for node in leafNodes) - len(currentLeaf.keys)
+            if (len(currentLeaf.keys) >= bulkThreshold):
                 leafNodes.append(currentLeaf)
                 nextLeaf = BucketNode(self.maxDegree, is_leaf = True)
                 currentLeaf.next = nextLeaf
@@ -182,7 +181,7 @@ class BPlusTree:
                 nodesBuild[i].parent = parent
 
                 j = i + 1
-                while (j < len(nodesBuild) and len(parent.keys) < self.maxDegree):
+                while (j < len(nodesBuild) and len(parent.keys) < self.maxDegree - 1):
                     promoteKey = nodesBuild[j].keys[0].key
                     parent.keys.append(DataItem(promoteKey, None))
                     parent.children.append(nodesBuild[j])
@@ -232,23 +231,15 @@ class BPlusTree:
         
         startKey = low if low is not None else -float('inf')
         currentNode = self.findLeaf(startKey)
-
-        if (currentNode == None):
-            return []
         
         while (currentNode is not None):
             for item in currentNode.keys:
                 key = item.key
-                index = item.value
 
                 if (high is not None and key > high):
                     return list(allIndices)
-
-                if (low is not None or key >= low):
-                    allIndices.add(index)
-                
-                allIndices.add(index)
-
+                if (low is None or key >= low):
+                    allIndices.add(item.value)
             currentNode = currentNode.next
         return list(allIndices)
     
@@ -286,18 +277,18 @@ class BPlusTree:
     def get_siblings(self, node):
         left, right = None, None
         index = 0
-        while index < len(node.parent.links) and node.parent.links[index] != node:
+        while index < len(node.parent.children) and node.parent.children[index] != node:
             index += 1
         if index > 0:
-            left = node.parent.links[index - 1]
-        if index < len(node.parent.links) - 1:
-            right = node.parent.links[index + 1]
+            left = node.parent.children[index - 1]
+        if index < len(node.parent.children) - 1:
+            right = node.parent.children[index + 1]
         return left, right, index
 
     def valid_steal(self, node):
         if node is None:
             return False
-        if len(node.keys) <= (self.maxdegree - 1) // 2:
+        if len(node.keys) <= (self.maxDegree - 1) // 2:
             return False
         return True
 
@@ -321,17 +312,17 @@ class BPlusTree:
         if direction == 'left':
             sibling = left
             borrow_key = sibling.keys.pop(-1)
-            borrow_link = sibling.links.pop(-1)
+            borrow_link = sibling.children.pop(-1)
             node.keys.insert(0, parent.keys[index - 1])
-            node.links.insert(0, borrow_link)
+            node.children.insert(0, borrow_link)
             borrow_link.parent = node
             parent.keys[index - 1] = borrow_key
         else:
             sibling = right
             borrow_key = sibling.keys.pop(0)
-            borrow_link = sibling.links.pop(0)
+            borrow_link = sibling.children.pop(0)
             node.keys.append(parent.keys[index])
-            node.links.append(borrow_link)
+            node.children.append(borrow_link)
             borrow_link.parent = node
             parent.keys[index] = borrow_key
 
@@ -341,28 +332,28 @@ class BPlusTree:
         if rightNode.next:
             rightNode.next.prev = leftNode
         parent = leftNode.parent
-        idx = 0
-        while idx < len(parent.links) and parent.links[idx] != leftNode:
-            idx += 1
-        parent.keys.pop(idx)
-        parent.links.pop(idx + 1)
-        if parent != self.root and len(parent.keys) < (self.maxdegree - 1) // 2:
+        index = 0
+        while index < len(parent.children) and parent.children[index] != leftNode:
+            index += 1
+        parent.keys.pop(index)
+        parent.children.pop(index + 1)
+        if parent != self.root and len(parent.keys) < (self.maxDegree - 1) // 2:
             self.fix_internal_bucket(parent)
 
     def internal_merge(self, leftNode, rightNode):
         parent = leftNode.parent
-        idx = 0
-        while idx < len(parent.links) and parent.links[idx] != leftNode:
-            idx += 1
-        leftNode.keys.append(parent.keys[idx])
+        index = 0
+        while index < len(parent.children) and parent.children[index] != leftNode:
+            index += 1
+        leftNode.keys.append(parent.keys[index])
         leftNode.keys.extend(rightNode.keys)
-        leftNode.links.extend(rightNode.links)
-        for child in rightNode.links:
+        leftNode.children.extend(rightNode.children)
+        for child in rightNode.children:
             child.parent = leftNode
-        parent.keys.pop(idx)
-        parent.links.pop(idx + 1)
+        parent.keys.pop(index)
+        parent.children.pop(index + 1)
         if parent == self.root and len(parent.keys) == 0:
             self.root = leftNode
             leftNode.parent = None
-        elif parent != self.root and len(parent.keys) < (self.maxdegree - 1) // 2:
+        elif parent != self.root and len(parent.keys) < (self.maxDegree - 1) // 2:
             self.fix_internal_bucket(parent)

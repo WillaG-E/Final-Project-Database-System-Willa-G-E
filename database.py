@@ -45,25 +45,38 @@ class Database:
             return []
         
         tree = self.indexManager.bplusIndices[field]
-        try:
-            low = float(low)
-        except ValueError:
-            pass
-        try:
-            high = float(high)
-        except ValueError:
-            pass
+        def clean_bounds(val):
+            try:
+                import re
+                return float(re.sub(r'[$,]', '', str(val)))
+            except:
+                return val
+            
+        low = clean_bounds(low) if low != "" else None
+        high = clean_bounds(high) if high != "" else None
         indices = tree.rangeSearch(low, high)
-        return [self.storage.records[i] for i in indices if i < len(self.storage.records) and self.storage.records[i] is not None]
+        return [self.storage.records[i] for i in indices 
+                if i < len(self.storage.records) and self.storage.records[i] is not None]
     
-    def delete_records(self, records):
+    def delete_records(self, recordsDelete):
         deletedCount = 0
-        for r in records:
+        for r in recordsDelete:
             try:
                 recordIndex = self.storage.records.index(r)
                 self.indexManager.delete_all(r, recordIndex)
                 self.storage.records[recordIndex] = None
                 deletedCount += 1
             except ValueError:
-                pass
+                continue
+        if deletedCount > 0:
+            self.exportModifiedDatabase("MODIFIED_DATABASE.csv")
+
         return deletedCount
+    
+    def exportModifiedDatabase(self, filename):
+        with open(filename, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(Record.FIELD_NAMES)
+            for r in self.storage.records:
+                if r is not None:
+                    writer.writerow(r.csvRow())
