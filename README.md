@@ -30,19 +30,46 @@ Explaination and analysis of the efficiency of:
 Example commands and their expected outputs
 
       Load Data:
+            Command: 1
+            Output: Loaded 15000 records. 
+            Data is loaded from CSV file.
       Index Field:
+            Command: 2 --> movie_title
+            Output: Index create on movie_title
       Exact Search:
+            Command: 3 --> genre --> Horror
+            Output: Found 2887 records. 
+            (then prints out all movies with the genre 'Horror')
       Range Search:
+            Command: 4 --> rating --> 8.0 --> 9.0
+            Output: Found __ records.
       Delete:
+            Command: 6 (after performing a search)
+            Output: Deleted 2887 records.
       
 Explanation of your hash function design choices.
 
       Hash Function (FNV-1a)
-            I used the FNV-1a hash function from my homework assignment exploring and navigating hash functions. This hash function was used since it provided a consistently strong performance. This method kept collisions and wasted space low for the title and quote hash tables in my earlier homework assignment. For this reason, I believed that this hash function would offer a good balance between the time taken and keeping the number of collisions and wasted space lower. It would work excellent with my chosen searchable fields.
+            I used the FNV-1a hash function from my homework assignment
+            exploring and navigating hash functions. This hash function was
+            used since it provided a consistently strong performance. This
+            method kept collisions and wasted space low for the title and
+            quote hash tables in my earlier homework assignment. For this
+            reason, I believed that this hash function would offer a good
+            balance between the time taken and keeping the number of
+            collisions and wasted space lower. It would work excellent with 
+            my chosen searchable fields.
             
 Discussion of your B+ tree implementation approach.
 
-      The B+ Tree uses updated and modified code from my previous homework assignment. This implementation approach used bulk loading to reduce the constant rebalancing that normally occurs from the insertions. The tree is built from sorted data that makes sure the nodes are filled to 3/4 capacity to optimize the space and leave room for future nodes. This B+ Tree uses leaf node linkage with next and prev pointers to help with the range search in finding the results from a low to high value without having to traverse through the nodes repeatedly.
+      The B+ Tree uses updated and modified code from my previous homework 
+      assignment. This implementation approach used bulk loading to reduce 
+      the constant rebalancing that normally occurs from the insertions. The 
+      tree is built from sorted data that makes sure the nodes are filled to 
+      3/4 capacity to optimize the space and leave room for future nodes. 
+      This B+ Tree uses leaf node linkage with next and prev pointers to 
+      help with the range search in finding the results from a low to high 
+      value without having to traverse through the nodes repeatedly.
 
 Explaination of why you chose certain fields to be searchable and which should not be.
 
