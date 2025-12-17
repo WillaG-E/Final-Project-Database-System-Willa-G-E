@@ -11,14 +11,21 @@ Instructions on how to run your program
    3. Enter command: 1, to load the data
    4. Enter command: 2, until you enter all of the searchable fields
    5. Enter command: 3, to find an exact search
+      
            -enter the searchable field
+      
            -enter what you want from that field (example: genre, Horror)
-   6. Enter command: 4, to find a range search
+      
+   7. Enter command: 4, to find a range search
+      
            -enter the searchable field
+
            -enter the lower bound you want to look at
+      
            -enter the higher bound you want to look at
-   7. Enter command: 5, to delete the data you searched from a modified database
-   8. Enter command: 0, to exit the Database System
+      
+   8. Enter command: 5, to delete the data you searched from a modified database
+   9. Enter command: 0, to exit the Database System
 
 Explaination and analysis of the efficiency of:
     * Initialization of the database
@@ -38,17 +45,17 @@ Discussion of your B+ tree implementation approach.
 
 Explaination of why you chose certain fields to be searchable and which should not be.
 
-   Searchable Fields:
-         movie_title
-         release_date
-         genre
-         rating
-         box_office_revenue
+      Searchable Fields:
+            movie_title
+            release_date
+            genre
+            rating
+            box_office_revenue
 
-   Not Searchable Fields:
-         director
-         duration_minutes
-         production_company
-         quote
-   
+      Not Searchable Fields:
+            director
+            duration_minutes
+            production_company
+            quote
+      
 Any known limitations or issues
