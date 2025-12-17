@@ -45,16 +45,10 @@ class Database:
             return []
         
         tree = self.indexManager.bplusIndices[field]
-        def clean_bounds(val):
-            try:
-                import re
-                return float(re.sub(r'[$,]', '', str(val)))
-            except:
-                return val
             
-        low = clean_bounds(low) if low != "" else None
-        high = clean_bounds(high) if high != "" else None
-        indices = tree.rangeSearch(low, high)
+        search_low = self.indexManager.parse_key(field, low) if low != "" else None
+        search_high = self.indexManager.parse_key(field, high) if high != "" else None
+        indices = tree.rangeSearch(search_low, search_high)
         return [self.storage.records[i] for i in indices 
                 if i < len(self.storage.records) and self.storage.records[i] is not None]
     

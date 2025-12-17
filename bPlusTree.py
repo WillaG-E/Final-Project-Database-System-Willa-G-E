@@ -127,19 +127,20 @@ class BPlusTree:
 
     def findLeaf(self, key):
         #helper function to help navigate from the root to the correct leaf node for a given key
-        node = self.root
-        if (node is None):
+        if (self.root is None):
             return None
+        
+        node = self.root
+        if (key is None):
+            while (not node.is_leaf):
+                node = node.children[0]
+            return node
+    
         while (not node.is_leaf):
             i = 0
             while (i < len(node.keys) and key >= node.keys[i].key):
                 i += 1
-                if i < len(node.children):
-                    node = node.children[i]
-                elif (node.children):
-                    node = node.children[-1]
-                else:
-                    return None
+            node = node.children[i]
         return node
     
     def bulkLoad(self, sortedPairs):
@@ -228,17 +229,13 @@ class BPlusTree:
 
     def rangeSearch(self, low = None, high = None):
         allIndices = set()
-        
-        startKey = low if low is not None else -float('inf')
-        currentNode = self.findLeaf(startKey)
+        currentNode = self.findLeaf(low)
         
         while (currentNode is not None):
             for item in currentNode.keys:
-                key = item.key
-
-                if (high is not None and key > high):
+                if (high is not None and item.key > high):
                     return list(allIndices)
-                if (low is None or key >= low):
+                if (low is None or item.key >= low):
                     allIndices.add(item.value)
             currentNode = currentNode.next
         return list(allIndices)

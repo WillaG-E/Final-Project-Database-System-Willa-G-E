@@ -19,12 +19,15 @@ class IndexManager:
             hash.add(record.getField(field), recordIndex)
 
     def create_bplus_index(self, field, records):
-        sortedPairs = [(self.parse_key(field, r.getField(field)), i)
-                        for i, r in enumerate(records) if r is not None]
-        sortedPairs = [pair for pair in sortedPairs if pair[0] is not None]
-        sortedPairs.sort(key = lambda x: str(x[0]))
+        pairs = []
+        for i, r in enumerate(records):
+            if (r is not None):
+                value = self.parse_key(field, r.getField(field))
+                if (value is not None):
+                    pairs.append((value, i))
+        pairs.sort(key = lambda x: x[0])
         tree = BPlusTree(maxDegree = 100)
-        tree.bulkLoad(sortedPairs)
+        tree.bulkLoad(pairs)
         self.bplusIndices[field] = tree
 
     def delete_all(self, record, recordIndex):
@@ -37,13 +40,14 @@ class IndexManager:
             bPlusTree.delete(record.getField(field), recordIndex)
 
     def parse_key(self, field, value):
+        if (value is None or value == ""):
+            return None
+        
         numeric_fields = ["rating", "box_office_revenue"]
-
-        if field == "box_office_revenue" and isinstance(value, str):
-            import re
+        if field in numeric_fields:
             try:
-                return float(re.sub(r'[$,]', '', value))
+                cleanValue = str(value.replace('$', '').replace(',', ''))
+                return float(cleanValue)
             except ValueError:
                 return None
-            
-        return value
+        return str(value)

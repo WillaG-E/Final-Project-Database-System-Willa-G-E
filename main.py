@@ -52,9 +52,9 @@ def main():
 
             #function that sends the field and value variables to get an exact search
             results = database.exact_search(field, value)
-            print(f"Found {len(results)} records.")
             for r in results:
                 print(r)
+            print(f"Found {len(results)} records.")
 
         elif (user_input == "4"):
             #Range queries
