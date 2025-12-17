@@ -20,11 +20,18 @@ Instructions on how to run your program
       8. Enter command: 5, to delete the data you searched from a modified database
       9. Enter command: 0, to exit the Database System
 
+
 Explaination and analysis of the efficiency of:
-    * Initialization of the database
-    * creation of indexes
-    * queries
-    * deletions
+      Initialization of the database
+            Time Complexity: O(number of records * number of searchable fields)
+      Creation of indexes
+            Time Complexity: O(N log N)
+      Exact Search
+            Time Complexity: O(1); if there are many collisons O(N)
+      Range Search
+            Time Complexity: O(log N + number of records within the range)
+      Deletions
+            Time Complexity: O(N + number of trees log N)
 
     
 Example commands and their expected outputs
@@ -46,6 +53,7 @@ Example commands and their expected outputs
       Delete:
             Command: 6 (after performing a search)
             Output: Deleted 2887 records.
+
       
 Explanation of your hash function design choices.
 
@@ -59,6 +67,7 @@ Explanation of your hash function design choices.
             balance between the time taken and keeping the number of
             collisions and wasted space lower. It would work excellent with 
             my chosen searchable fields.
+
             
 Discussion of your B+ tree implementation approach.
 
@@ -70,6 +79,7 @@ Discussion of your B+ tree implementation approach.
       This B+ Tree uses leaf node linkage with next and prev pointers to 
       help with the range search in finding the results from a low to high 
       value without having to traverse through the nodes repeatedly.
+
 
 Explaination of why you chose certain fields to be searchable and which should not be.
 
@@ -85,5 +95,9 @@ Explaination of why you chose certain fields to be searchable and which should n
             duration_minutes: less prioritized/important compared to rating and revenue
             production_company: could be useful, but would significantly increase the memory footprint in the Hash Tables
             quote: more suited for searching through unique strings with a full-text search engine than a structured B+ Tree
+
       
 Any known limitations or issues
+      Memory Overhead: The Hash Table is created for every searchable fields upon running the file, memory usage increases linearly with the number of searchable fields.
+      String vs. Numeric Comparison: The B+ Tree uses str(x) to sort keys. This works for titles, but it requires careful parsing for numeric fields like box_office_revenue to ensure that the numbers aren't sorted out of order. The system strips symbols and converts them to floats to mitigate this.
+      Static Headers: The Record class depends on FIELD_NAMES being correct during the CSV load in command 1; if you were to use a different CSV or an additional CSV with different columns it would require reprogramming.
