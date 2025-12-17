@@ -24,12 +24,16 @@ Instructions on how to run your program
 Explaination and analysis of the efficiency of:
       Initialization of the database
             Time Complexity: O(number of records * number of searchable fields)
+            
             Creation of indexes
                   Time Complexity: O(N log N)
+                  
             Exact Search
                   Time Complexity: O(1); if there are many collisons O(N)
-            Range Search
+            Range 
+            
                   Time Complexity: O(log N + number of records within the range)
+                  
             Deletions
                   Time Complexity: O(N + number of trees log N)
 
@@ -98,6 +102,17 @@ Explaination of why you chose certain fields to be searchable and which should n
 
       
 Any known limitations or issues
-      Memory Overhead: The Hash Table is created for every searchable             fields upon running the file, memory usage increases linearly with          the number of searchable fields.
-      String vs. Numeric Comparison: The B+ Tree uses str(x) to sort keys.       This works for titles, but it requires careful parsing for numeric          fields like box_office_revenue to ensure that the numbers aren't            sorted out of order. The system strips symbols and converts them to         floats to mitigate this.
-      Static Headers: The Record class depends on FIELD_NAMES being correct       during the CSV load in command 1; if you were to use a different CSV        or an additional CSV with different columns it would require                reprogramming.
+      Memory Overhead: The Hash Table is created for every searchable
+      fields upon running the file, memory usage increases linearly with
+      the number of searchable fields.
+      
+      String vs. Numeric Comparison: The B+ Tree uses str(x) to sort keys.
+      This works for titles, but it requires careful parsing for numeric   
+      fields like box_office_revenue to ensure that the numbers aren't     
+      sorted out of order. The system strips symbols and converts them to
+      floats to mitigate this.
+      
+      Static Headers: The Record class depends on FIELD_NAMES being correct
+      during the CSV load in command 1; if you were to use a different CSV 
+      or an additional CSV with different columns it would require
+      reprogramming.
