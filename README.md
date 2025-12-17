@@ -30,8 +30,8 @@ Explaination and analysis of the efficiency of:
                   
             Exact Search
                   Time Complexity: O(1); if there are many collisons O(N)
-            Range 
-            
+    
+            Range Search
                   Time Complexity: O(log N + number of records within the range)
                   
             Deletions
@@ -102,6 +102,7 @@ Explaination of why you chose certain fields to be searchable and which should n
 
       
 Any known limitations or issues
+      
       Memory Overhead: The Hash Table is created for every searchable
       fields upon running the file, memory usage increases linearly with
       the number of searchable fields.
