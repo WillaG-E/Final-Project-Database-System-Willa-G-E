@@ -145,6 +145,10 @@ class BPlusTree:
             self.root = None
             return
         
+        bulkThreshold = (self.maxDegree * 3) // 4
+        if bulkThreshold == 0:
+            bulkThreshold = 1
+
         leafNodes = []
         currentLeaf = BucketNode(self.maxDegree, is_leaf = True)
 
@@ -152,7 +156,8 @@ class BPlusTree:
             dataItem = DataItem(key, index)
             currentLeaf.keys.append(dataItem)
 
-            if (len(currentLeaf.keys) >= self.maxDegree):
+            if (len(currentLeaf.keys) >= bulkThreshold and len(leafNodes) < len(sortedPairs) // bulkThreshold):
+                remainingPairs = len(sortedPairs) - sum(len(node.keys) for node in leafNodes) - len(currentLeaf.keys)
                 leafNodes.append(currentLeaf)
                 nextLeaf = BucketNode(self.maxDegree, is_leaf = True)
                 currentLeaf.next = nextLeaf
