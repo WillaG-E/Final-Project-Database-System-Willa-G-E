@@ -1,7 +1,10 @@
 # Final-Project-Database-System-Willa-G-E
 Final Project: Database System for UMaine COS226
+
 Author: Willa Galipeau-Eldridge
+
 Date: 12/17/2025
+
 Course: COS226 - Intro Data Struct & Algorithms
 
 Instructions on how to run your program
